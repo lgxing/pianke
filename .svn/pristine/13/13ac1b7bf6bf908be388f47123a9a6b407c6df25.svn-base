@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <com.lamp.gxpk.pulltorefresh.PullToRefreshLayout
+        android:id="@+id/frag_home_vp_layout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+
+        <include layout="@layout/refresh_head" />
+
+        <com.lamp.gxpk.pulltorefresh.pullableview.PullableGridView
+            android:id="@+id/frag_home_vp_gv"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:background="#fff"
+            android:listSelector="#00000000"
+            android:numColumns="2"
+            android:scrollbars="none" />
+
+        <include layout="@layout/load_more" />
+    </com.lamp.gxpk.pulltorefresh.PullToRefreshLayout>
+
+</LinearLayout>

@@ -1,0 +1,183 @@
+package com.lamp.gxpk;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lamp.gxpk.bean.UserBean;
+import com.lamp.gxpk.bean.VideoBean;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.view.annotation.ViewInject;
+import com.lidroid.xutils.view.annotation.event.OnClick;
+
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.media.ThumbnailUtils;
+import android.os.Bundle;
+import android.provider.MediaStore.Images.Thumbnails;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.datatype.BmobFile;
+import cn.bmob.v3.listener.SaveListener;
+import cn.bmob.v3.listener.UploadFileListener;
+
+public class ShareActivity extends BaseActivity implements BaseInterface {
+	@ViewInject(R.id.act_share_back)
+	private ImageView back;// 返回
+	@ViewInject(R.id.act_share_share)
+	private ImageView share;// 分享
+	@ViewInject(R.id.act_share_video_img)
+	private ImageView videoImg;// 视频封面图片
+	@ViewInject(R.id.act_share_info)
+	private EditText videoInfo;// 视频介绍
+	@ViewInject(R.id.act_share_lin_pyq)
+	private LinearLayout pyq;// 分享至朋友圈
+	@ViewInject(R.id.act_share_lin_qq)
+	private LinearLayout qq;// 分享至QQ
+	@ViewInject(R.id.act_share_lin_wx)
+	private LinearLayout wx;// 分享至微信
+	@ViewInject(R.id.act_share_lin_sina)
+	private LinearLayout sina;// 分享至新浪微博
+	private String path;// 视频文件的路径
+	private Bitmap bit;// 视频封面图片
+	private UserBean ub;// 当前登录对象
+	private BmobFile bmobFile;// 视频文件
+	private File file1;// 视频文件
+	private ProgressDialog uploadloadDialog;
+	private BmobFile bmobFile1;// 视频照片文件
+
+	@Override
+	protected void onCreate(Bundle arg0) {
+		// TODO Auto-generated method stub
+		super.onCreate(arg0);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_share);
+		ViewUtils.inject(getAct());
+		ub = BmobUser.getCurrentUser(getAct(), UserBean.class);
+
+	}
+
+	@Override
+	public void initDatas() {
+		Intent intent = getIntent();
+		path = intent.getStringExtra("video");
+		bit = ThumbnailUtils.createVideoThumbnail(path, Thumbnails.MINI_KIND);// 视频图片
+		videoImg.setImageBitmap(bit);
+
+	}
+
+	@Override
+	public void initOper() {
+		upLoadImg();// 上传视频图片
+
+	}
+
+	/**
+	 * 上传视频图片
+	 */
+	private void upLoadImg() {
+		File file = new File(getCacheDir(), System.currentTimeMillis() + ".png");
+		try {
+			bit.compress(CompressFormat.PNG, 100, new FileOutputStream(file));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		bmobFile1 = new BmobFile(file);
+		bmobFile1.uploadblock(getAct(), new UploadFileListener() {
+
+			@Override
+			public void onSuccess() {
+				toastShort("图片上传成功");
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+				toastShort(arg0+"图片上传失败"+arg1);
+				logE("照片上传失败"+arg1);
+			}
+		});
+
+	}
+
+	/**
+	 * 上传视频文件
+	 */
+	private void upLoadVideo() {
+		file1 = new File(path);
+		bmobFile = new BmobFile(file1);
+		bmobFile.uploadblock(getAct(), new UploadFileListener() {
+
+			@Override
+			public void onSuccess() {
+//				toastShort("视频上传成功~");
+				VideoBean vBean = new VideoBean();
+				vBean.setUserId(ub.getObjectId());// 用户id
+				vBean.setVideo(bmobFile);// 视频文件
+				vBean.setVideoicon(bmobFile1);// 视频照片
+				vBean.setUiconUrl(ub.getUsericon().getFileUrl(getAct()));// 用户头像
+				logE("用户头像"+ub.getUsericon().getFileUrl(getAct()));
+				vBean.setNickname(ub.getNickname());// 用户昵称
+				String string = videoInfo.getText().toString().trim();
+				vBean.setSpeak(string);//视频介绍
+				vBean.save(getAct(), new SaveListener() {
+
+					@Override
+					public void onSuccess() {
+						toastShort("上传成功");
+						uploadloadDialog.dismiss();
+						finish();
+					}
+
+					@Override
+					public void onFailure(int arg0, String arg1) {
+						logE(arg0+"错误原因"+arg1);
+					}
+				});
+			}
+
+			@Override
+			public void onProgress(Integer value) {
+				// TODO Auto-generated method stub
+				super.onProgress(value);
+				uploadloadDialog.setProgress(value);
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+
+			}
+		});
+	}
+
+	@OnClick(R.id.act_share_back)
+	public void onClick(View v) {// 返回
+		finish();
+	}
+
+	@OnClick(R.id.act_share_share)
+	public void onClick2(View v) {// 将视频分享至服务器
+		uploadloadDialog = new ProgressDialog(getAct());
+		// downloadDialog.setIcon(R.drawable.ic_launcher);
+		uploadloadDialog.setTitle("上传中请等待...");
+		uploadloadDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		uploadloadDialog.setCanceledOnTouchOutside(false);
+		// uploadloadDialog.setProgressNumberFormat("0/100");
+		uploadloadDialog.show();
+		upLoadVideo();// 上传视频文件
+	}
+
+}

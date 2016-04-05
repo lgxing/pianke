@@ -1,0 +1,295 @@
+package com.lamp.gxpk;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lamp.gxpk.bean.UserBean;
+import com.lamp.gxpk.bean.VideoBean;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.view.annotation.ViewInject;
+import com.lidroid.xutils.view.annotation.event.OnClick;
+import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.sdk.modelmsg.SendMessageToWX.Req;
+import com.tencent.mm.sdk.modelmsg.WXMediaMessage;
+import com.tencent.mm.sdk.modelmsg.WXTextObject;
+import com.tencent.mm.sdk.openapi.IWXAPI;
+import com.tencent.mm.sdk.openapi.WXAPIFactory;
+
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.media.ThumbnailUtils;
+import android.os.Bundle;
+import android.provider.MediaStore.Images.Thumbnails;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.datatype.BmobFile;
+import cn.bmob.v3.listener.SaveListener;
+import cn.bmob.v3.listener.UploadFileListener;
+
+public class ShareActivity extends BaseActivity implements BaseInterface {
+	@ViewInject(R.id.act_share_back)
+	private ImageView back;// 返回
+	@ViewInject(R.id.act_share_share)
+	private ImageView share;// 分享
+	@ViewInject(R.id.act_share_video_img)
+	private ImageView videoImg;// 视频封面图片
+	@ViewInject(R.id.act_share_info)
+	private EditText videoInfo;// 视频介绍
+	@ViewInject(R.id.act_share_lin_pyq)
+	private LinearLayout pyq;// 分享至朋友圈
+	@ViewInject(R.id.act_share_lin_qq)
+	private LinearLayout qq;// 分享至QQ
+	@ViewInject(R.id.act_share_lin_wx)
+	private LinearLayout wx;// 分享至微信
+	@ViewInject(R.id.act_share_lin_sina)
+	private LinearLayout sina;// 分享至新浪微博
+	private String path;// 视频文件的路径
+	private Bitmap bit;// 视频封面图片
+	private UserBean ub;// 当前登录对象
+	private BmobFile bmobFile;// 视频文件
+	private File file1;// 视频文件
+	private ProgressDialog uploadloadDialog;
+	private BmobFile bmobFile1;// 视频照片文件
+
+	private static final String APPID = "wx1ef613099f3668be";
+	private IWXAPI api;
+	private VideoBean vBean;
+	private WXTextObject wxText;
+
+	@Override
+	protected void onCreate(Bundle arg0) {
+		// TODO Auto-generated method stub
+		super.onCreate(arg0);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_share);
+		ViewUtils.inject(getAct());
+		ub = BmobUser.getCurrentUser(getAct(), UserBean.class);
+		api = WXAPIFactory.createWXAPI(getAct(), APPID, true);
+		api.registerApp(APPID);
+
+	}
+
+	@Override
+	public void initDatas() {
+		Intent intent = getIntent();
+		path = intent.getStringExtra("video");
+		logE(path + "------");
+		bit = ThumbnailUtils.createVideoThumbnail(path, Thumbnails.MINI_KIND);// 视频图片
+		videoImg.setImageBitmap(bit);
+
+	}
+
+	@Override
+	public void initOper() {
+		upLoadImg();// 上传视频图片
+
+	}
+
+	/**
+	 * 上传视频图片
+	 */
+	private void upLoadImg() {
+		File file = new File(getCacheDir(), System.currentTimeMillis() + ".png");
+		try {
+			bit.compress(CompressFormat.PNG, 100, new FileOutputStream(file));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		bmobFile1 = new BmobFile(file);
+		bmobFile1.uploadblock(getAct(), new UploadFileListener() {
+
+			@Override
+			public void onSuccess() {
+				toastShort("图片上传成功");
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+				toastShort(arg0 + "图片上传失败" + arg1);
+				logE("照片上传失败" + arg1);
+			}
+		});
+
+	}
+
+	/**
+	 * 上传视频文件
+	 */
+	private void upLoadVideo() {
+		file1 = new File(path);
+		bmobFile = new BmobFile(file1);
+
+		bmobFile.uploadblock(getAct(), new UploadFileListener() {
+
+			@Override
+			public void onSuccess() {
+				// toastShort("视频上传成功~");
+				vBean = new VideoBean();
+				vBean.setUserId(ub.getObjectId());// 用户id
+				vBean.setVideo(bmobFile);// 视频文件
+				vBean.setVideoicon(bmobFile1);// 视频照片
+				vBean.setUiconUrl(ub.getUsericon().getFileUrl(getAct()));// 用户头像
+				logE("用户头像" + ub.getUsericon().getFileUrl(getAct()));
+				vBean.setNickname(ub.getNickname());// 用户昵称
+				String string = videoInfo.getText().toString().trim();
+				vBean.setSpeak(string);// 视频介绍
+				vBean.save(getAct(), new SaveListener() {
+
+					@Override
+					public void onSuccess() {
+						toastShort("上传成功");
+						uploadloadDialog.dismiss();
+						finish();
+//						pyq.setOnClickListener(new OnClickListener() {
+//
+//							@Override
+//							public void onClick(View v) {
+//								wxText = new WXTextObject();
+//								wxText.text = "分享测试";
+//								WXMediaMessage message = new WXMediaMessage();
+//								message.mediaObject = wxText;
+//								message.description = "分享测试";
+//								SendMessageToWX.Req req = new Req();
+//								req.transaction = getType("text");
+//								req.message = message;
+//								req.scene = SendMessageToWX.Req.WXSceneSession;
+//								api.sendReq(req);
+
+								// WXVideoObject video = new WXVideoObject();
+								// video.videoUrl =
+								// bmobFile.getFileUrl(getAct());
+								// logE("1" + bmobFile.getFileUrl(getAct()));
+								// WXMediaMessage msg = new
+								// WXMediaMessage(video);
+								// msg.title = "搞笑片客";
+								// msg.description =
+								// videoInfo.getText().toString().trim();
+								// Bitmap thumb =
+								// BitmapFactory.decodeResource(getResources(),
+								// R.drawable.fenxinag);
+								// msg.thumbData = Util.bmpToByteArray(thumb,
+								// true);
+								// logE("2");
+								// SendMessageToWX.Req req = new
+								// SendMessageToWX.Req();
+								// req.transaction = getType("video");
+								// logE("3");
+								// req.message = msg;
+								// req.scene =
+								// SendMessageToWX.Req.WXSceneTimeline;
+								// logE("4");
+								// api.sendReq(req);
+								// logE("5");
+//							}
+//						});
+					}
+
+					@Override
+					public void onFailure(int arg0, String arg1) {
+						logE(arg0 + "错误原因" + arg1);
+					}
+				});
+			}
+
+			@Override
+			public void onProgress(Integer value) {
+				// TODO Auto-generated method stub
+				super.onProgress(value);
+				uploadloadDialog.setProgress(value);
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+
+			}
+		});
+	}
+
+	@OnClick(R.id.act_share_back)
+	public void onClick1(View v) {// 返回
+		finish();
+	}
+
+	@OnClick(R.id.act_share_share)
+	public void onClick2(View v) {// 将视频分享至服务器
+		uploadloadDialog = new ProgressDialog(getAct());
+		// downloadDialog.setIcon(R.drawable.ic_launcher);
+		uploadloadDialog.setTitle("上传中请等待...");
+		uploadloadDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		uploadloadDialog.setCanceledOnTouchOutside(false);
+		// uploadloadDialog.setProgressNumberFormat("0/100");
+		uploadloadDialog.show();
+		upLoadVideo();// 上传视频文件
+	}
+
+	// @OnClick(R.id.act_share_lin_pyq)
+	// public void onClick3(View v) {// 分享至微信朋友圈
+	//
+	// WXVideoObject video = new WXVideoObject();
+	// video.videoUrl = bmobFile.getFileUrl(getAct());
+	// logE("1" + bmobFile.getFileUrl(getAct()));
+	// WXMediaMessage msg = new WXMediaMessage(video);
+	// msg.title = "搞笑片客";
+	// msg.description = videoInfo.getText().toString().trim();
+	// Bitmap thumb = BitmapFactory.decodeResource(getResources(),
+	// R.drawable.fenxinag);
+	// msg.thumbData = Util.bmpToByteArray(thumb, true);
+	// logE("2");
+	// SendMessageToWX.Req req = new SendMessageToWX.Req();
+	// req.transaction = getType("video");
+	// logE("3");
+	// req.message = msg;
+	// req.scene = SendMessageToWX.Req.WXSceneTimeline;
+	// logE("4");
+	// api.sendReq(req);
+	// logE("5");
+	// }
+
+	@OnClick(R.id.act_share_lin_wx)
+	public void onClick4(View v) {
+		// WXVideoObject video = new WXVideoObject();
+		// video.videoUrl = bmobFile.getUrl();
+		// WXMediaMessage msg = new WXMediaMessage(video);
+		// msg.title = "搞笑片客";
+		// msg.description = videoInfo.getText().toString().trim();
+		// Bitmap thumb = BitmapFactory.decodeResource(getResources(),
+		// R.drawable.fenxinag);
+		// msg.thumbData = Util.bmpToByteArray(thumb, true);
+		// SendMessageToWX.Req req = new SendMessageToWX.Req();
+		// req.transaction = getType("video");
+		// req.message = msg;
+		// req.scene = SendMessageToWX.Req.WXSceneSession;
+		//
+		// api.sendReq(req);
+		wxText = new WXTextObject();
+		wxText.text = "分享测试";
+		WXMediaMessage message = new WXMediaMessage();
+		message.mediaObject = wxText;
+		message.description = "分享测试";
+		SendMessageToWX.Req req = new Req();
+		req.transaction = getType("text");
+		req.message = message;
+		req.scene = SendMessageToWX.Req.WXSceneSession;
+		api.sendReq(req);
+	}
+
+	public String getType(String type) {
+		return System.currentTimeMillis() + type;
+	}
+}

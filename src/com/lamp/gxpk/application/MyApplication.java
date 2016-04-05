@@ -1,0 +1,105 @@
+package com.lamp.gxpk.application;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import android.app.Application;
+import cn.bmob.sms.BmobSMS;
+import cn.bmob.v3.Bmob;
+import cn.bmob.v3.BmobQuery;
+import cn.bmob.v3.listener.FindListener;
+
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
+import com.lamp.gxpk.bean.VideoBean;
+
+/**
+ * 程序的入口，负责数据的初始化与缓存工作
+ * @author Administrator
+ *
+ */
+public class MyApplication extends Application {
+
+	/**
+	 * 负责存储数据的集合
+	 */
+	private static Map<String, Object> map;
+	//消息队列
+	public static RequestQueue queue;
+	
+	private OnFinishListener finishListener;
+	@Override
+	public void onCreate() {
+		// TODO Auto-generated method stub
+		super.onCreate();
+		map = new HashMap<String, Object>();
+		queue = Volley.newRequestQueue(this);
+		initBmob();
+		initData();
+		
+	}
+	
+	public interface OnFinishListener{
+		void onFinish(List<VideoBean> arg0);
+	}
+	
+	/**
+	 * 初始化数据
+	 */
+	private void initData() {
+		BmobQuery<VideoBean> query = new BmobQuery<VideoBean>();
+		query.order("-createdAt");
+		query.setLimit(6);
+		query.findObjects(this, new FindListener<VideoBean>() {
+			
+			@Override
+			public void onSuccess(List<VideoBean> arg0) {
+				putData("initData", arg0);
+				if(finishListener!=null){
+					finishListener.onFinish(arg0);
+				}
+			}
+			
+			@Override
+			public void onError(int arg0, String arg1) {
+				
+			}
+		});
+	}
+
+	/**
+	 * 初始化Bmob
+	 */
+	private void initBmob() {
+		Bmob.initialize(this, "212ee40e6925ddab9607035fc8b68f2f");
+		BmobSMS.initialize(this, "212ee40e6925ddab9607035fc8b68f2f");
+	}
+
+	/**
+	 * 将数据存入缓存
+	 * @param key 数据的key
+	 * @param obj 要保存的数据
+	 */
+	public static void putData(String key,Object obj){
+		map.put(key, obj);
+	}
+	/**
+	 * 从缓存中拿出数据
+	 * @param key 数据的key
+	 * @param isDelete 是否删除
+	 * @return 要拿的数据
+	 */
+	public static Object getData(String key,boolean isDelete){
+		Object obj = map.get(key);
+		if(isDelete){
+			map.remove(key);
+		}
+		return obj;
+	}
+
+	public void setFinishListener(OnFinishListener finishListener) {
+		this.finishListener = finishListener;
+	}
+	
+}

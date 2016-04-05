@@ -1,0 +1,66 @@
+package com.lamp.gxpk;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
+
+import com.lamp.gxpk.adapter.HomeVpAdapter;
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseFragment;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lamp.gxpk.fragment.HomeVpFragment;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.view.annotation.ViewInject;
+
+/**
+ * 首页Activity
+ * 
+ * @author Administrator
+ *
+ */
+public class HomeActivity extends BaseActivity implements BaseInterface {
+
+	// 主页面的ViewPager
+	@ViewInject(R.id.act_home_vp)
+	private ViewPager vp;
+	private List<BaseFragment> frags;
+	private FragmentPagerAdapter adapter;
+	private FragmentManager fm;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	// 初始化控件
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_home);
+		ViewUtils.inject(getAct());
+	}
+
+	// 初始化数据
+	@Override
+	public void initDatas() {
+		frags = new ArrayList<BaseFragment>();
+		frags.add(new HomeVpFragment());
+		frags.add(new HomeVpFragment());
+		fm = getSupportFragmentManager();
+		adapter = new HomeVpAdapter(fm, frags);
+		vp.setAdapter(adapter);
+	}
+
+	// 初始化操作
+	@Override
+	public void initOper() {
+
+	}
+
+}

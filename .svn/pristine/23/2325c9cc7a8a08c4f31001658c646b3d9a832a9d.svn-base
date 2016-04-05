@@ -1,0 +1,216 @@
+package com.lamp.gxpk;
+
+import java.io.File;
+import java.util.List;
+
+import com.lamp.gxpk.adapter.CommentlvAdapter;
+import com.lamp.gxpk.application.MyApplication;
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lamp.gxpk.bean.CommentBean;
+import com.lamp.gxpk.bean.UserBean;
+import com.lamp.gxpk.bean.VideoBean;
+import com.lamp.gxpk.myview.MyImageView;
+import com.lamp.gxpk.utils.GetVideoTimeUtils;
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.view.annotation.ViewInject;
+import com.lidroid.xutils.view.annotation.event.OnClick;
+
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import cn.bmob.v3.BmobQuery;
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.listener.FindListener;
+import cn.bmob.v3.listener.SaveListener;
+import io.vov.vitamio.LibsChecker;
+import io.vov.vitamio.MediaPlayer;
+import io.vov.vitamio.MediaPlayer.OnPreparedListener;
+import io.vov.vitamio.widget.MediaController;
+import io.vov.vitamio.widget.VideoView;
+
+public class PlayVideoActivity extends BaseActivity implements BaseInterface {
+
+	@ViewInject(R.id.act_playvideo_video)
+	private VideoView video;// 视频播放
+	@ViewInject(R.id.act_playvideo_usericon)
+	private MyImageView iconimg;// 用户头像
+	@ViewInject(R.id.act_playvideo_username)
+	private TextView tvuname;// 用户昵称
+	@ViewInject(R.id.act_playvideo_speak)
+	private TextView tvspeak;// 用户发布视频时发表的言论
+	@ViewInject(R.id.act_playvideo_lovenum)
+	private TextView tvlovenum;// 收藏该视频的人数
+	@ViewInject(R.id.act_playvideo_lovenum)
+	private TextView tvCommentnum;// 评论该视频的人数
+	@ViewInject(R.id.act_playvideo_content)
+	private EditText etcontent;// 评论的内容
+	@ViewInject(R.id.act_playvideo_lv)
+	private ListView commentlv;// 评论列表
+	@ViewInject(R.id.act_playvideo_progressbar)
+	private ProgressBar progressBar;// 显示当前缓存进度
+	@ViewInject(R.id.act_playvideo_time)
+	private TextView tvtime;//视频总时长
+	private UserBean ub;// 当前登录用户
+	
+	private VideoBean vbean;//
+	
+	@Override
+	protected void onCreate(Bundle arg0) {
+		super.onCreate(arg0);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_playvideo);
+		ViewUtils.inject(this);
+	}
+
+	@Override
+	public void initDatas() {
+		
+		vbean = (VideoBean) MyApplication.getData("video", true);
+		
+		ub = BmobUser.getCurrentUser(this, UserBean.class);
+		// 查询该视频所有评论
+		getVideoComment();
+		
+	}
+
+	@Override
+	public void initOper() {
+		playVideo(vbean.getVideo().getFileUrl(this));
+	}
+
+	private void playVideo(String url) {
+		// 检测是否有支持库, 没有的话会自动安装
+		if (LibsChecker.checkVitamioLibs(this)) {
+			// 设置资源本地路径
+			video.setVideoPath(url);
+			// 添加控制器 (默认控制器)
+			video.setMediaController(new MediaController(this));
+			
+			video.setOnPreparedListener(new OnPreparedListener() {
+				
+				@Override
+				public void onPrepared(MediaPlayer mp) {
+					//获得视频总时长
+					long time = video.getDuration();
+					logE(time+"毫秒");
+					String time_str = GetVideoTimeUtils.getvideotime(time);
+					//显示时长
+					tvtime.setText(time_str);
+				}
+			});
+			// 开始播放
+			video.start();
+			
+		}
+	}
+	//下载视频的操作
+	@OnClick(R.id.act_playvideo_load)
+	public void loadOnClick(View v){
+		HttpUtils hu = new HttpUtils();
+		// TODO 加下载下来的路径
+		final String target = Environment.getExternalStorageDirectory().getAbsolutePath()+"/gxpk/download/"+System.currentTimeMillis()+".mp4";
+		// 下载视频
+		hu.download(vbean.getVideo().getFileUrl(this), target, true, true, new RequestCallBack<File>() {
+			
+			@Override
+			public void onStart() {
+				super.onStart();
+				progressBar.setProgress(1);
+				logE("下载开始了吗");
+			}
+			
+			@Override
+			public void onLoading(long total, long current, boolean isUploading) {
+				super.onLoading(total, current, isUploading);
+				int i = (int) (current / (total / 100));
+				logE("下载进行中....");
+				progressBar.setProgress(i);
+			}
+			@Override
+			public void onSuccess(ResponseInfo<File> arg0) {
+				toastShort("下载成功，请去本地查看");
+			}
+			
+			@Override
+			public void onFailure(HttpException arg0, String arg1) {
+				logE(arg1+"下载失败");
+			}
+		});
+		
+	}
+	// 该方法用于查询当前视频所有的评论及设置评论的人数
+	private void getVideoComment() {
+
+		BmobQuery<CommentBean> query = new BmobQuery<CommentBean>();
+		// TODO 添加视频Id
+		query.addWhereEqualTo("objectId", vbean.getObjectId());
+		query.order("-createdAt");
+		query.findObjects(getAct(), new FindListener<CommentBean>() {
+
+			@Override
+			public void onSuccess(List<CommentBean> arg0) {
+				// 查询成功以后设置评论的总人数
+				if (arg0 == null||arg0.size()==0) {
+					tvCommentnum.setText("0人评论");
+				} else {
+					tvCommentnum.setText(arg0.size() + "人评论");
+				}
+				// 设置数据源
+				commentlv.setAdapter(new CommentlvAdapter(getAct(), arg0));
+			}
+
+			@Override
+			public void onError(int arg0, String arg1) {
+				logE("查询失败:" + arg1);
+			}
+		});
+
+	}
+	
+	// 发表对该视频评论的操作
+	@OnClick(R.id.act_playvideo_fabu)
+	public void fabuOnClick(View v) {
+		// 判断评论内容是否为空
+		String content = etcontent.getText().toString().trim();
+		if (content == null) {
+			toastShort("请输入您评论的内容");
+			return;
+		}
+		// 上传服务器
+		CommentBean cbean = new CommentBean();
+		cbean.setContent(content);
+		cbean.setNickname(ub.getNickname());
+		cbean.setNickname(ub.getUsericon().getFileUrl(this));
+		// TODO 完善视频ID
+		cbean.setVideoId("视频ID");
+		cbean.save(getAct(), new SaveListener() {
+
+			@Override
+			public void onSuccess() {
+				toastShort("发表成功");
+				// 刷新评论
+				getVideoComment();
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+				logE("评论失败" + arg1);
+			}
+		});
+	}
+}

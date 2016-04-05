@@ -1,0 +1,196 @@
+package com.lamp.gxpk;
+
+import java.io.File;
+import java.util.List;
+
+import com.lamp.gxpk.adapter.CommentlvAdapter;
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lamp.gxpk.bean.CommentBean;
+import com.lamp.gxpk.bean.UserBean;
+import com.lamp.gxpk.myview.MyImageView;
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.view.annotation.ViewInject;
+import com.lidroid.xutils.view.annotation.event.OnClick;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import cn.bmob.v3.BmobQuery;
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.listener.FindListener;
+import cn.bmob.v3.listener.SaveListener;
+import io.vov.vitamio.LibsChecker;
+import io.vov.vitamio.widget.MediaController;
+import io.vov.vitamio.widget.VideoView;
+
+public class PlayVideoActivity extends BaseActivity implements BaseInterface {
+
+	@ViewInject(R.id.act_playvideo_video)
+	private VideoView video;// 视频播放
+	@ViewInject(R.id.act_playvideo_usericon)
+	private MyImageView iconimg;// 用户头像
+	@ViewInject(R.id.act_playvideo_username)
+	private TextView tvuname;// 用户昵称
+	@ViewInject(R.id.act_playvideo_speak)
+	private TextView tvspeak;// 用户发布视频时发表的言论
+	@ViewInject(R.id.act_playvideo_lovenum)
+	private TextView tvlovenum;// 收藏该视频的人数
+	@ViewInject(R.id.act_playvideo_lovenum)
+	private TextView tvCommentnum;// 评论该视频的人数
+	@ViewInject(R.id.act_playvideo_content)
+	private EditText etcontent;// 评论的内容
+	@ViewInject(R.id.act_playvideo_lv)
+	private ListView commentlv;// 评论列表
+	@ViewInject(R.id.act_playvideo_progressbar)
+	private ProgressBar progressBar;// 显示当前缓存进度
+	private UserBean ub;// 当前登录用户
+
+	@Override
+	protected void onCreate(Bundle arg0) {
+		super.onCreate(arg0);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_playvideo);
+		ViewUtils.inject(this);
+	}
+
+	@Override
+	public void initDatas() {
+		Intent intent = getIntent();
+		String url = intent.getStringExtra("path");
+		ub = BmobUser.getCurrentUser(this, UserBean.class);
+		// 查询该视频所有评论
+		//getVideoComment();
+		playVideo(url);
+	}
+
+	@Override
+	public void initOper() {
+		
+		
+		
+//		HttpUtils hu = new HttpUtils();
+//		// TODO 加下载下来的路径
+//		String target = null;
+//		// 下载视频
+//		hu.download("", target, true, true, new RequestCallBack<File>() {
+//			// 开始下载
+//			@Override
+//			public void onStart() {
+//				super.onStart();
+//				progressBar.setProgress(1);
+//			}
+//
+//			// 下载中
+//			@Override
+//			public void onLoading(long total, long current, boolean isUploading) {
+//				super.onLoading(total, current, isUploading);
+//
+//				int i = (int) (current / (total / 100));
+//				progressBar.setProgress(i);
+//			}
+//
+//			// 下载成功
+//			@Override
+//			public void onSuccess(ResponseInfo<File> arg0) {
+//
+//			}
+//
+//			// 下载失败
+//			@Override
+//			public void onFailure(HttpException arg0, String arg1) {
+//				toastShort("下载失败" + arg1);
+//			}
+//		});
+		
+	}
+
+	private void playVideo(String url) {
+		// 检测是否有支持库, 没有的话会自动安装
+		if (LibsChecker.checkVitamioLibs(this)) {
+			// 设置资源本地路径
+			video.setVideoPath(url);
+			
+			video.getDuration();
+			// 添加控制器 (默认控制器)
+			video.setMediaController(new MediaController(this));
+			// 开始播放
+			video.start();
+		}
+	}
+
+	// 该方法用于查询当前视频所有的评论及设置评论的人数
+	private void getVideoComment() {
+
+		BmobQuery<CommentBean> query = new BmobQuery<CommentBean>();
+		// TODO 添加视频Id
+		query.addWhereEqualTo("objectId", "视频ID");
+		query.order("-createdAt");
+		query.findObjects(getAct(), new FindListener<CommentBean>() {
+
+			@Override
+			public void onSuccess(List<CommentBean> arg0) {
+				// 查询成功以后设置评论的总人数
+				if (arg0 == null) {
+					tvCommentnum.setText("0人评论");
+				} else {
+					tvCommentnum.setText(arg0.size() + "人评论");
+				}
+				// 设置数据源
+				commentlv.setAdapter(new CommentlvAdapter(getAct(), arg0));
+			}
+
+			@Override
+			public void onError(int arg0, String arg1) {
+				logE("查询失败:" + arg1);
+			}
+		});
+
+	}
+
+	// 发表对该视频评论的操作
+	@OnClick(R.id.act_playvideo_fabu)
+	public void fabuOnClick(View v) {
+		// 判断评论内容是否为空
+		String content = etcontent.getText().toString().trim();
+		if (content == null) {
+			toastShort("请输入您评论的内容");
+			return;
+		}
+		// 上传服务器
+		CommentBean cbean = new CommentBean();
+		cbean.setContent(content);
+		cbean.setNickname(ub.getNickname());
+		cbean.setNickname(ub.getUsericon().getFileUrl(this));
+		// TODO 完善视频ID
+		cbean.setVideoId("视频ID");
+		cbean.save(getAct(), new SaveListener() {
+
+			@Override
+			public void onSuccess() {
+				toastShort("发表成功");
+				// 刷新评论
+				getVideoComment();
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+				logE("评论失败" + arg1);
+			}
+		});
+	}
+}

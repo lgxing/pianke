@@ -1,0 +1,87 @@
+package com.lamp.gxpk.bean;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.datatype.BmobFile;
+
+public class UserBean extends BmobUser {
+	
+	private String nickname;//昵称
+	private String sex;//性别
+	private Integer age;//年龄
+	private String address;//地址
+	
+	private BmobFile usericon;//头像
+	
+	private List<String> lovevideoIds;//收藏视频的Id集合
+	private List<String> gzUserids;//关注用户Id的集合
+	
+	
+	public List<String> getGzUserids() {
+		
+		if (gzUserids==null) {
+			gzUserids=new ArrayList<String>();
+		}
+		
+		return gzUserids;
+	}
+
+	public void setGzUserids(List<String> gzUserids) {
+		this.gzUserids = gzUserids;
+	}
+
+	public String getNickname() {
+		return nickname;
+	}
+
+	public void setNickname(String nickname) {
+		this.nickname = nickname;
+	}
+
+	public String getSex() {
+		return sex;
+	}
+
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+
+	public Integer getAge() {
+		return age;
+	}
+
+	public void setAge(Integer age) {
+		this.age = age;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	public BmobFile getUsericon() {
+		return usericon;
+	}
+
+	public void setUsericon(BmobFile usericon) {
+		this.usericon = usericon;
+	}
+
+	public List<String> getLovevideoIds() {
+		if (lovevideoIds == null) {
+			lovevideoIds = new ArrayList<String>();
+		}
+		return lovevideoIds;
+	}
+
+	public void setLovevideoIds(List<String> lovevideoIds) {
+		this.lovevideoIds = lovevideoIds;
+	}
+	
+	
+}

@@ -1,0 +1,72 @@
+package com.lamp.gxpk.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.GridView;
+
+import com.lamp.gxpk.R;
+import com.lamp.gxpk.adapter.HomeGvAdapter;
+import com.lamp.gxpk.base.BaseFragment;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.view.annotation.ViewInject;
+
+/**
+ * 主页面显示视频列表的Fragment
+ * 
+ * @author Administrator
+ * 
+ */
+public class HomeVpFragment extends BaseFragment implements BaseInterface {
+	//显示列表的GridView
+	@ViewInject(R.id.frag_home_vp_gv)
+	private GridView gv;
+	
+	private List<String> datas;
+
+	private HomeGvAdapter adapter;
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onActivityCreated(savedInstanceState);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public View getFragmentView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		View v = inflater.inflate(R.layout.frag_home_vp, null);
+		ViewUtils.inject(this,v);
+		return v;
+	}
+
+	@Override
+	public void initViews() {
+		
+	}
+
+	@Override
+	public void initDatas() {
+		datas = new ArrayList<String>();
+		for(int i=0;i<10;i++){
+			datas.add("");
+		}
+		
+	}
+
+	@Override
+	public void initOper() {
+		adapter = new HomeGvAdapter(datas, getActivity());
+		gv.setAdapter(adapter);
+	}
+
+}

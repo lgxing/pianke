@@ -1,0 +1,350 @@
+package com.lamp.gxpk;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lamp.gxpk.bean.UserBean;
+import com.lamp.gxpk.myview.MyImageView;
+import com.lamp.gxpk.utils.ImageLoaderUtils;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.view.annotation.ViewInject;
+import com.lidroid.xutils.view.annotation.event.OnClick;
+
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.EditText;
+import android.widget.TextView;
+import cn.bmob.v3.BmobQuery;
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.datatype.BmobFile;
+import cn.bmob.v3.listener.GetListener;
+import cn.bmob.v3.listener.UpdateListener;
+import cn.bmob.v3.listener.UploadFileListener;
+
+public class UserInfoActivity extends BaseActivity implements BaseInterface, OnClickListener {
+
+	private UserBean ub;// 当前登录用户
+	private String userId;// 点击跳转带过来的用户id
+	@ViewInject(R.id.act_usermsg_edit)
+	private TextView edit;// 编辑
+	@ViewInject(R.id.act_usermsg_guanzhu)
+	private TextView love;// 关注
+	@ViewInject(R.id.act_usermsg_usericon)
+	private MyImageView usericon;// 用户头像
+	@ViewInject(R.id.act_usermsg_userphone)
+	private TextView userPhone;// 用户手机号
+	@ViewInject(R.id.act_usermsg_usernicheng)
+	private EditText userNick;// 用户昵称
+	@ViewInject(R.id.act_usermsg_usersex)
+	private EditText userSex;// 用户性别
+	@ViewInject(R.id.act_usermsg_userage)
+	private EditText userAge;// 用户年龄
+	@ViewInject(R.id.act_usermsg_userdizhi)
+	private EditText userDizhi;// 用户地址
+	private String nicheng;// 昵称
+	private int age;// 年龄
+	private String sex;// 性别
+	private String dizhi;// 地址
+	private Bitmap bitmap1;// 头像
+	private File file;
+
+	@Override
+	protected void onCreate(Bundle arg0) {
+		// TODO Auto-generated method stub
+		super.onCreate(arg0);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_user_info);
+		ViewUtils.inject(getAct());
+		ub = BmobUser.getCurrentUser(getAct(), UserBean.class);
+	}
+
+	@Override
+	public void initDatas() {
+		Intent intent = getIntent();
+		userId = intent.getStringExtra("uId");// 用户id
+	}
+
+	@Override
+	public void initOper() {
+		BmobQuery<UserBean> query = new BmobQuery<UserBean>();
+		if (userId.equals(ub.getObjectId())) {// 用户本人
+			edit.setVisibility(View.VISIBLE);
+			love.setVisibility(View.INVISIBLE);
+			userNick.setOnClickListener(this);
+			userAge.setOnClickListener(this);
+			usericon.setOnClickListener(this);
+			userSex.setOnClickListener(this);
+			userDizhi.setOnClickListener(this);
+			query.getObject(getAct(), ub.getObjectId(), new GetListener<UserBean>() {
+
+				@Override
+				public void onFailure(int arg0, String arg1) {
+
+				}
+
+				@Override
+				public void onSuccess(UserBean arg0) {
+					ImageLoaderUtils.loadSmallImg(usericon, arg0.getUsericon().getFileUrl(getAct()));
+					userPhone.setText(arg0.getUsername());
+					userNick.setText(arg0.getNickname());
+					userAge.setText(arg0.getAge() + "");
+					userSex.setText(arg0.getSex());
+					userDizhi.setText(arg0.getAddress());
+				}
+			});
+		} else {// 其他用户点入
+			love.setVisibility(View.VISIBLE);
+			edit.setVisibility(View.INVISIBLE);
+			query.getObject(getAct(), ub.getObjectId(), new GetListener<UserBean>() {
+
+				@Override
+				public void onFailure(int arg0, String arg1) {
+
+				}
+
+				@Override
+				public void onSuccess(UserBean arg0) {
+					if (!arg0.getGzUserids().contains(userId)) {
+						love.setText("关注");
+					} else {
+						love.setText("已关注");
+					}
+					BmobQuery<UserBean> query = new BmobQuery<UserBean>();
+					query.getObject(getAct(), userId, new GetListener<UserBean>() {
+
+						@Override
+						public void onFailure(int arg0, String arg1) {
+							// TODO Auto-generated method stub
+
+						}
+
+						@Override
+						public void onSuccess(UserBean arg0) {
+							ImageLoaderUtils.loadSmallImg(usericon, arg0.getUsericon().getFileUrl(getAct()));
+							userPhone.setText(arg0.getUsername());
+							userNick.setText(arg0.getNickname());
+							userAge.setText(arg0.getAge() + "");
+							userSex.setText(arg0.getSex());
+							userDizhi.setText(arg0.getAddress());
+						}
+					});
+
+				}
+			});
+		}
+
+	}
+
+	@OnClick(R.id.act_usermsg_back)
+	public void onClick1(View v) {
+		finish();// 返回
+	}
+
+	@OnClick(R.id.act_usermsg_edit)
+	public void onClick2(View v) {// 修改个人资料
+		UserBean uu = new UserBean();
+		uu.setObjectId(ub.getObjectId());
+		uu.setAddress(userDizhi.getText().toString().trim());
+		uu.setAge(Integer.parseInt(userAge.getText().toString()));
+		uu.setNickname(userNick.getText().toString().trim());
+		uu.setSex(userSex.getText().toString().trim());
+		// logE("---"+dizhi+"----"+age+"---"+nicheng+"----"+sex);
+		uu.update(getAct(), ub.getObjectId(), new UpdateListener() {
+
+			@Override
+			public void onSuccess() {
+				toastShort("资料更新成功");
+				finish();
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+
+			}
+		});
+
+	}
+
+	@OnClick(R.id.act_usermsg_guanzhu)
+	public void onClick3(View v) {// 关注
+		String str = love.getText().toString().trim();
+		if (str.equals("关注")) {// 进行关注
+			love.setText("已关注");
+			ub.getGzUserids().add(userId);
+			UserBean uu = new UserBean();
+			uu.setObjectId(ub.getObjectId());
+			uu.getGzUserids().add(userId);
+			uu.add("gzUserids", userId);
+			uu.update(getAct(), ub.getObjectId(), new UpdateListener() {
+
+				@Override
+				public void onSuccess() {
+					// TODO Auto-generated method stub
+					toastShort("关注成功");
+				}
+
+				@Override
+				public void onFailure(int arg0, String arg1) {
+					// TODO Auto-generated method stub
+
+				}
+			});
+
+		} else {// 取消关注
+			love.setText("关注");
+			ub.getGzUserids().remove(userId);
+			UserBean uu = new UserBean();
+			uu.setObjectId(ub.getObjectId());
+			List<String> values = new ArrayList<String>();
+			values.add(userId);
+			uu.removeAll("gzUserids", values);
+			uu.update(getAct(), ub.getObjectId(), new UpdateListener() {
+
+				@Override
+				public void onSuccess() {
+					toastShort("已取消关注");
+				}
+
+				@Override
+				public void onFailure(int arg0, String arg1) {
+
+				}
+			});
+		}
+	}
+
+	@Override
+	public void onClick(View v) {
+		if (userId.equals(ub.getObjectId())) {
+			switch (v.getId()) {
+			case R.id.act_usermsg_usericon:// 用户头像
+				Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+				intent.putExtra("return-data", true);
+				intent.setType("image/*");
+				// 裁剪
+				intent.putExtra("crop", "circleCrop");
+				// 裁剪比例
+				intent.putExtra("aspectX", 1);
+				intent.putExtra("aspectY", 1);
+				// 裁剪大小
+				intent.putExtra("outputX", 50);
+				intent.putExtra("outputY", 50);
+				startActivityForResult(intent, 2);
+
+				break;
+			case R.id.act_usermsg_usernicheng:// 昵称
+				nicheng = userNick.getText().toString().trim();
+				userNick.setText(nicheng);
+				break;
+
+			case R.id.act_usermsg_userage:// 年龄
+				age = Integer.parseInt(userAge.getText().toString().trim());
+				userAge.setText(age + "");
+				break;
+
+			case R.id.act_usermsg_usersex:// 性别
+				String[] items = { "男", "女" };
+				AlertDialog alertDialog = new AlertDialog.Builder(getAct())
+						.setItems(items, new DialogInterface.OnClickListener() {
+
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								if (which == 0) {
+									sex = "男";
+									userSex.setText("男");
+								} else {
+									sex = "女";
+									userSex.setText("女");
+								}
+							}
+						}).create();
+				alertDialog.show();
+				break;
+
+			case R.id.act_usermsg_userdizhi:// 地址
+				dizhi = userDizhi.getText().toString().trim();
+				userDizhi.setText(dizhi);
+				break;
+
+			}
+		}else {
+			userNick.setClickable(false);
+			userAge.setClickable(false);
+			usericon.setClickable(false);
+			userSex.setClickable(false);
+			userDizhi.setClickable(false);
+		}
+	}
+
+	@Override
+	protected void onActivityResult(int arg0, int arg1, Intent data) {
+		// TODO Auto-generated method stub
+		super.onActivityResult(arg0, arg1, data);
+		if (data != null && data.getExtras() != null) {
+			bitmap1 = (Bitmap) data.getExtras().get("data");// 5.0以后废掉了
+			// usericon.setImageBitmap(bitmap1);
+			// 上传与更新头像
+			upLoadAndupData(bitmap1);
+
+		}
+	}
+
+	private void upLoadAndupData(final Bitmap bitmap1) {
+		file = new File(getCacheDir(), "usericon.png");
+		try {
+			bitmap1.compress(CompressFormat.PNG, 100, new FileOutputStream(file));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		final BmobFile bmobFile = new BmobFile(file);
+		bmobFile.uploadblock(getAct(), new UploadFileListener() {
+
+			@Override
+			public void onSuccess() {
+				ub.setUsericon(bmobFile);
+				UserBean uu = new UserBean();
+				uu.setUsericon(bmobFile);
+				uu.update(getAct(), ub.getObjectId(), new UpdateListener() {
+
+					@Override
+					public void onSuccess() {
+						// TODO Auto-generated method stub
+						usericon.setImageBitmap(bitmap1);
+
+					}
+
+					@Override
+					public void onFailure(int arg0, String arg1) {
+						// TODO Auto-generated method stub
+					}
+				});
+			}
+
+			@Override
+			public void onFailure(int arg0, String arg1) {
+
+			}
+		});
+	}
+
+}

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.lamp.gxpk"
+    android:versionCode="1"
+    android:versionName="1.0" >
+    <!-- 461b38af04ca7c11c89745c893040c9a -->
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="22" />
+    <!-- 录制声音 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 使用摄像头 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <!-- 使用外部存储器的权限 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- Bmob使用权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+
+    <!-- Bmob使用权限 -->
+
+    <application
+        android:name="com.lamp.gxpk.application.MyApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/logo"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.Light.NoTitleBar" >
+        <activity
+            android:name="com.lamp.gxpk.HomeActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.lamp.gxpk.LocalVideoActivity" >
+        </activity>
+
+
+        <activity android:name="com.lamp.gxpk.RecordVideoActivity" >
+        </activity>
+
+        <activity android:name="com.lamp.gxpk.ShareActivity" >
+        </activity>
+
+
+        <activity android:name="com.lamp.gxpk.PlayVideoActivity" >
+        </activity>
+        <activity android:name="com.lamp.gxpk.LogRegActivity" >
+        </activity>
+        <activity android:name="com.lamp.gxpk.ForgetPassActivity" >
+        </activity>
+        <activity android:name="io.vov.vitamio.activity.InitActivity" >
+        </activity>
+        <activity android:name="com.lamp.gxpk.UserInfoActivity" >
+        </activity>
+        <activity android:name="com.lamp.gxpk.UpdatePassActivity" >
+        </activity>
+    </application>
+
+</manifest>

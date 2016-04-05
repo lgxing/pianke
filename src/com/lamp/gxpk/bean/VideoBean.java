@@ -1,0 +1,92 @@
+package com.lamp.gxpk.bean;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import cn.bmob.v3.BmobObject;
+import cn.bmob.v3.datatype.BmobFile;
+
+public class VideoBean extends BmobObject {
+	
+	private String userId;//发布视频用户的的ID;
+	private String videotime;//视频的时长
+	private BmobFile videoicon;//视频首页展示的图片文件
+	private BmobFile video;//视频文件
+	private String uiconUrl;//分布视频用户的头像Url
+	private String speak;//用户发布视频是发布的言论
+	private String nickname;//发布视频用户的昵称
+	private List<String> loveduserIds;//收藏该视频的用户Id的集合
+
+	
+	public String getNickname() {
+		return nickname;
+	}
+
+	public void setNickname(String nickname) {
+		this.nickname = nickname;
+	}
+
+	public String getSpeak() {
+		return speak;
+	}
+
+	public void setSpeak(String speak) {
+		this.speak = speak;
+	}
+	
+	
+	public String getUiconUrl() {
+		return uiconUrl;
+	}
+
+	public void setUiconUrl(String uiconUrl) {
+		this.uiconUrl = uiconUrl;
+	}
+
+	
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public String getVideotime() {
+		return videotime;
+	}
+
+	public void setVideotime(String videotime) {
+		this.videotime = videotime;
+	}
+
+	public BmobFile getVideoicon() {
+		return videoicon;
+	}
+
+	public void setVideoicon(BmobFile videoicon) {
+		this.videoicon = videoicon;
+	}
+
+	public BmobFile getVideo() {
+		return video;
+	}
+
+	public void setVideo(BmobFile video) {
+		this.video = video;
+	}
+
+	public List<String> getLoveduserIds() {
+		if (loveduserIds == null) {
+			loveduserIds = new ArrayList<String>();
+		}
+		return loveduserIds;
+	}
+
+	public void setLoveduserIds(List<String> loveduserIds) {
+		this.loveduserIds = loveduserIds;
+	}
+	
+	
+	
+}

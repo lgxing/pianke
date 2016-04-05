@@ -1,0 +1,83 @@
+package com.lamp.gxpk;
+
+import java.io.File;
+
+import com.lamp.gxpk.base.BaseActivity;
+import com.lamp.gxpk.base.BaseInterface;
+import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.view.annotation.ViewInject;
+import com.lidroid.xutils.view.annotation.event.OnClick;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
+import android.os.Bundle;
+import android.provider.MediaStore.Images.Thumbnails;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+
+public class ShareActivity extends BaseActivity implements BaseInterface {
+	@ViewInject(R.id.act_share_back)
+	private ImageView back;// 返回
+	@ViewInject(R.id.act_share_share)
+	private ImageView share;// 分享
+	@ViewInject(R.id.act_share_video_img)
+	private ImageView videoImg;// 视频封面图片
+	@ViewInject(R.id.act_share_info)
+	private EditText videoInfo;// 视频介绍
+	@ViewInject(R.id.act_share_lin_pyq)
+	private LinearLayout pyq;// 分享至朋友圈
+	@ViewInject(R.id.act_share_lin_qq)
+	private LinearLayout qq;// 分享至QQ
+	@ViewInject(R.id.act_share_lin_wx)
+	private LinearLayout wx;// 分享至微信
+	@ViewInject(R.id.act_share_lin_sina)
+	private LinearLayout sina;// 分享至新浪微博
+	private String path;// 视频文件的路径
+	private Bitmap bit;//视频封面图片
+	private File file;//视频文件
+
+	@Override
+	protected void onCreate(Bundle arg0) {
+		// TODO Auto-generated method stub
+		super.onCreate(arg0);
+		initViews();
+		initDatas();
+		initOper();
+	}
+
+	@Override
+	public void initViews() {
+		setContentView(R.layout.act_share);
+		ViewUtils.inject(getAct());
+
+	}
+
+	@Override
+	public void initDatas() {
+		Intent intent = getIntent();
+		path = intent.getStringExtra("video");
+		file = new File(path);
+		bit = ThumbnailUtils.createVideoThumbnail(path, Thumbnails.MINI_KIND);//视频图片
+
+	}
+
+	@Override
+	public void initOper() {
+		
+
+	}
+
+	@OnClick(R.id.act_share_back)
+	public void onClick(View v) {// 返回
+		finish();
+	}
+
+	@OnClick(R.id.act_share_share)
+	public void onClick2(View v) {// 将视频分享至服务器
+
+	}
+
+}
